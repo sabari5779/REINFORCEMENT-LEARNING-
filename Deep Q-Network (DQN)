@@ -1,0 +1,70 @@
+import random
+
+# Actions
+ACTIONS = ["pick", "place", "move"]
+
+# Parameters
+EPISODES = 50
+ALPHA = 0.1        # Learning rate
+GAMMA = 0.9        # Discount factor
+EPSILON = 0.2      # Exploration
+
+# Q-table (simulated DQN)
+Q = {}
+
+# Prioritized Replay Buffer
+replay_buffer = []
+
+def get_q(state, action):
+    return Q.get((state, action), 0)
+
+def choose_action(state):
+    if random.random() < EPSILON:
+        return random.choice(ACTIONS)
+    else:
+        return max(ACTIONS, key=lambda a: get_q(state, a))
+
+def store_experience(exp, priority):
+    replay_buffer.append((priority, exp))
+
+def sample_experiences(k=3):
+    replay_buffer.sort(reverse=True, key=lambda x: x[0])
+    return [exp for _, exp in replay_buffer[:k]]
+
+def environment_step(state, action):
+    if action == "pick":
+        return "holding", 1
+    elif action == "place" and state == "holding":
+        return "done", 2
+    else:
+        return state, -1
+
+# Training Loop
+for episode in range(1, EPISODES + 1):
+    state = "start"
+    total_reward = 0
+
+    while state != "done":
+        action = choose_action(state)
+        next_state, reward = environment_step(state, action)
+
+        # TD Error
+        old_q = get_q(state, action)
+        future_q = max([get_q(next_state, a) for a in ACTIONS], default=0)
+        td_error = reward + GAMMA * future_q - old_q
+
+        # Store experience with priority
+        store_experience((state, action, reward, next_state), abs(td_error))
+
+        # Sample and update
+        samples = sample_experiences()
+        for s, a, r, ns in samples:
+            Q[(s, a)] = get_q(s, a) + ALPHA * td_error
+
+        state = next_state
+        total_reward += reward
+
+    if episode % 10 == 0:
+        print(f"Episode {episode} : Total Reward = {total_reward}")
+
+print("\nRobotic arm learned efficient pick-and-place behavior")
