@@ -1,0 +1,46 @@
+import random
+
+NUM_CSRS = 3
+NUM_CALLS = 10
+AVG_SERVICE_TIME = 5
+SIMULATIONS = 1000
+
+def mean(lst):
+    return sum(lst) / len(lst)
+
+def random_policy():
+    csrs = [0] * NUM_CSRS
+    waiting_times = []
+
+    for _ in range(NUM_CALLS):
+        service_time = random.expovariate(1 / AVG_SERVICE_TIME)
+        csr = random.randint(0, NUM_CSRS - 1)
+        waiting_times.append(csrs[csr])
+        csrs[csr] += service_time
+
+    return -mean(waiting_times)
+
+def least_busy_policy():
+    csrs = [0] * NUM_CSRS
+    waiting_times = []
+
+    for _ in range(NUM_CALLS):
+        service_time = random.expovariate(1 / AVG_SERVICE_TIME)
+        csr = csrs.index(min(csrs))
+        waiting_times.append(csrs[csr])
+        csrs[csr] += service_time
+
+    return -mean(waiting_times)
+
+def monte_carlo(policy):
+    values = []
+    for _ in range(SIMULATIONS):
+        values.append(policy())
+    return mean(values)
+
+random_value = monte_carlo(random_policy)
+least_busy_value = monte_carlo(least_busy_policy)
+
+print("Estimated Value Function:")
+print("Random Assignment Policy :", round(random_value, 2))
+print("Least Busy CSR Policy    :", round(least_busy_value, 2))
